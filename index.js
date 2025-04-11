@@ -35,14 +35,14 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 /**
  * @swagger
- * /themes:
+ * /theme:
  *   get:
  *     description: Get all themes
  *     responses:
  *       200:
  *         description: A list of themes
  */
-app.get("/themes", (req, res) => {
+app.get("/theme", (req, res) => {
   db.query("SELECT * FROM themes", (err, results) => {
     if (err) return res.status(500).send(err);
     res.json(results);
@@ -51,7 +51,7 @@ app.get("/themes", (req, res) => {
 
 /**
  * @swagger
- * /themes:
+ * /theme:
  *   post:
  *     description: Add a new theme
  *     requestBody:
@@ -75,7 +75,7 @@ app.get("/themes", (req, res) => {
  *       201:
  *         description: Theme added successfully
  */
-app.post("/themes", (req, res) => {
+app.post("/theme", (req, res) => {
   const { title, location, description, difficulty, scariness } = req.body;
   const sql =
     "INSERT INTO themes (title, location, description, difficulty, scariness) VALUES (?, ?, ?, ?, ?)";
