@@ -49,6 +49,65 @@ app.get("/theme", (req, res) => {
   });
 });
 
+
+/**
+ * @swagger
+ * /themes/{id}:
+ *   put:
+ *     summary: Update a theme
+ *     description: Update an existing theme by ID
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID of the theme to update
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *               location:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               difficulty:
+ *                 type: integer
+ *               scariness:
+ *                 type: integer
+ *     responses:
+ *       200:
+ *         description: Theme updated successfully
+ *       404:
+ *         description: Theme not found
+ */
+app.put("/themes/:id", (req, res) => {
+  const { id } = req.params;
+  const { title, location, description, difficulty, scariness } = req.body;
+
+  const sql = `
+    UPDATE themes 
+    SET title = ?, location = ?, description = ?, difficulty = ?, scariness = ? 
+    WHERE id = ?
+  `;
+  const values = [title, location, description, difficulty, scariness, id];
+
+  db.query(sql, values, (err, result) => {
+    if (err) return res.status(500).send(err);
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "해당 ID의 테마가 없습니다." });
+    }
+    res.json({ message: "테마 업데이트 완료" });
+  });
+});
+
+
+
 /**
  * @swagger
  * /theme:
@@ -89,6 +148,37 @@ app.post("/theme", (req, res) => {
     });
   });
 });
+
+/**
+ * @swagger
+ * /themes/{id}:
+ *   delete:
+ *     description: Delete a theme by ID
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Theme deleted successfully
+ *       404:
+ *         description: Theme not found
+ */
+app.delete("/themes/:id", (req, res) => {
+  const themeId = req.params.id;
+
+  const sql = "DELETE FROM themes WHERE id = ?";
+  db.query(sql, [themeId], (err, result) => {
+    if (err) return res.status(500).send(err);
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "테마를 찾을 수 없습니다." });
+    }
+    res.json({ message: "테마 삭제 완료" });
+  });
+});
+
 
 // 서버 실행
 app.listen(3000, () => {
