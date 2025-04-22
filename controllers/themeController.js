@@ -13,7 +13,7 @@ exports.getThemes = (req, res) => {
 
 exports.createTheme = async (req, res) => {
   try {
-    const { title, location, description, difficulty, scariness } = req.body;
+    const { title, description, difficulty, scariness } = req.body;
     const file = req.file;
 
     if (!file) {
@@ -32,16 +32,22 @@ exports.createTheme = async (req, res) => {
     const s3Result = await s3.upload(params).promise();
     const imageUrl = s3Result.Location;
 
-    const sql = `INSERT INTO themes (title, location, description, difficulty, scariness, image_url)
+    // 필수 필드 누락 시 에러 처리
+    if (!title || !description || !difficulty || !scariness) {
+      return sendError(
+        res,
+        400,
+        "필수 입력 항목이 누락되었습니다.",
+        "MISSING_REQUIRED_FIELDS",
+        {
+          required: ["title", "description", "difficulty", "scariness"],
+        }
+      );
+    }
+
+    const sql = `INSERT INTO themes (title, description, difficulty, scariness, image_url)
                  VALUES (?, ?, ?, ?, ?, ?)`;
-    const values = [
-      title,
-      location,
-      description,
-      difficulty,
-      scariness,
-      imageUrl,
-    ];
+    const values = [title, description, difficulty, scariness, imageUrl];
 
     db.query(sql, values, (err, result) => {
       if (err) return sendError(res, 500, "테마 등록 실패", "DB_ERROR");
@@ -59,7 +65,7 @@ exports.createTheme = async (req, res) => {
 
 exports.updateTheme = (req, res) => {
   const { id } = req.params;
-  const { title, location, description, difficulty, scariness } = req.body;
+  const { title, description, difficulty, scariness } = req.body;
 
   if (!id || isNaN(Number(id))) {
     return sendError(
@@ -75,10 +81,10 @@ exports.updateTheme = (req, res) => {
 
   const sql = `
     UPDATE themes
-    SET title = ?, location = ?, description = ?, difficulty = ?, scariness = ?
+    SET title = ?, description = ?, difficulty = ?, scariness = ?
     WHERE id = ?
   `;
-  const values = [title, location, description, difficulty, scariness, id];
+  const values = [title, description, difficulty, scariness, id];
 
   db.query(sql, values, (err, result) => {
     if (err) return sendError(res, 500, "테마 수정 실패", "DB_ERROR");

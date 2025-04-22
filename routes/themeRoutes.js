@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const upload = require("../middlewares/upload"); // multer 미들웨어 추가
+const upload = require("../middlewares/upload");
 const {
   getThemes,
   createTheme,
@@ -38,8 +38,6 @@ router.get("/theme", getThemes);
  *                 format: binary
  *               title:
  *                 type: string
- *               location:
- *                 type: string
  *               description:
  *                 type: string
  *               difficulty:
@@ -57,6 +55,8 @@ router.post("/theme", upload.single("image"), createTheme);
  * /api/themes/{id}:
  *   put:
  *     description: Update a theme by ID
+ *     consumes:
+ *       - multipart/form-data
  *     parameters:
  *       - in: path
  *         name: id
@@ -66,13 +66,14 @@ router.post("/theme", upload.single("image"), createTheme);
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
  *             properties:
- *               title:
+ *               image:
  *                 type: string
- *               location:
+ *                 format: binary
+ *               title:
  *                 type: string
  *               description:
  *                 type: string
@@ -84,7 +85,7 @@ router.post("/theme", upload.single("image"), createTheme);
  *       200:
  *         description: Theme updated successfully
  */
-router.put("/themes/:id", updateTheme);
+router.put("/themes/:id", upload.single("image"), updateTheme);
 
 /**
  * @swagger
