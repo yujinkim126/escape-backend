@@ -1,6 +1,6 @@
-// routes/themeRoutes.js
 const express = require("express");
 const router = express.Router();
+const upload = require("../middlewares/upload"); // multer 미들웨어 추가
 const {
   getThemes,
   createTheme,
@@ -24,13 +24,18 @@ router.get("/theme", getThemes);
  * /api/theme:
  *   post:
  *     description: Add a new theme
+ *     consumes:
+ *       - multipart/form-data
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
  *             properties:
+ *               image:
+ *                 type: string
+ *                 format: binary
  *               title:
  *                 type: string
  *               location:
@@ -45,7 +50,7 @@ router.get("/theme", getThemes);
  *       201:
  *         description: Theme added successfully
  */
-router.post("/theme", createTheme);
+router.post("/theme", upload.single("image"), createTheme);
 
 /**
  * @swagger

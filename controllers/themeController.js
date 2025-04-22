@@ -1,6 +1,8 @@
 // controllers/themeController.js
 const db = require("../config/db");
+const s3 = require("../config/s3");
 const { sendSuccess, sendError } = require("../utils/response");
+const { v4: uuidv4 } = require("uuid"); // npm install uuid 필요
 
 exports.getThemes = (req, res) => {
   db.query("SELECT * FROM themes", (err, results) => {
@@ -9,40 +11,50 @@ exports.getThemes = (req, res) => {
   });
 };
 
-exports.createTheme = (req, res) => {
-  const { title, location, description, difficulty, scariness } = req.body;
+exports.createTheme = async (req, res) => {
+  try {
+    const { title, location, description, difficulty, scariness } = req.body;
+    const file = req.file;
 
-  if (!title || typeof title !== "string") {
-    return sendError(
-      res,
-      400,
-      "요청 파라미터 형식이 올바르지 않습니다.",
-      "INVALID_PARAMETER_FORMAT",
-      {
-        field: "title",
-      }
-    );
+    if (!file) {
+      return sendError(res, 400, "이미지 파일이 필요합니다.", "MISSING_IMAGE");
+    }
+
+    const s3Key = `themes/${uuidv4()}_${file.originalname}`;
+
+    const params = {
+      Bucket: process.env.AWS_S3_BUCKET_NAME,
+      Key: s3Key,
+      Body: file.buffer,
+      ContentType: file.mimetype,
+    };
+
+    const s3Result = await s3.upload(params).promise();
+    const imageUrl = s3Result.Location;
+
+    const sql = `INSERT INTO themes (title, location, description, difficulty, scariness, image_url)
+                 VALUES (?, ?, ?, ?, ?, ?)`;
+    const values = [
+      title,
+      location,
+      description,
+      difficulty,
+      scariness,
+      imageUrl,
+    ];
+
+    db.query(sql, values, (err, result) => {
+      if (err) return sendError(res, 500, "테마 등록 실패", "DB_ERROR");
+
+      sendSuccess(res, 201, "테마 등록 완료", {
+        insertedId: result.insertId,
+        image_url: imageUrl,
+      });
+    });
+  } catch (err) {
+    console.error(err);
+    return sendError(res, 500, "서버 내부 오류", "INTERNAL_SERVER_ERROR");
   }
-
-  if (typeof difficulty !== "number") {
-    return sendError(
-      res,
-      400,
-      "요청 파라미터 형식이 올바르지 않습니다.",
-      "INVALID_PARAMETER_FORMAT",
-      {
-        field: "difficulty",
-      }
-    );
-  }
-
-  const sql = `INSERT INTO themes (title, location, description, difficulty, scariness) VALUES (?, ?, ?, ?, ?)`;
-  const values = [title, location, description, difficulty, scariness];
-
-  db.query(sql, values, (err, result) => {
-    if (err) return sendError(res, 500, "테마 등록 실패", "DB_ERROR");
-    sendSuccess(res, 201, "테마 등록 완료", { insertedId: result.insertId });
-  });
 };
 
 exports.updateTheme = (req, res) => {
